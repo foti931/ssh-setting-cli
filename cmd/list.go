@@ -5,9 +5,16 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/spf13/cobra"
 )
+
+type Options struct {
+	host string
+}
+
+var opts Options
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
@@ -19,8 +26,28 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		host, err := cmd.Flags().GetString("host")
+		if err != nil {
+			return err
+		}
+
+		opts.host = host
+
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+		// ホスト名からIPアドレスを検索
+		ips, err := net.LookupIP(opts.host)
+		if err != nil {
+			fmt.Printf("IPアドレスの取得に失敗しました: %v\n", err)
+			return
+		}
+
+		// 取得したIPアドレスを表示
+		for _, ip := range ips {
+			fmt.Printf("%s のIPアドレス: %s\n", opts.host, ip.String())
+		}
 	},
 }
 
@@ -35,5 +62,5 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	listCmd.Flags().StringP("host", "H", "localhost", "ホスト名")
 }
